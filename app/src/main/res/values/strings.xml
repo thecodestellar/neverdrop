@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NeverDrop</string>
+    <string name="widget_description">Quickly capture tasks with text or voice in under 3 seconds</string>
+    <string name="widget_label">NeverDrop Quick Add</string>
+</resources>

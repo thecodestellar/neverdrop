@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "204869979080",
+    "project_id": "neverdrop-47a29",
+    "storage_bucket": "neverdrop-47a29.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:204869979080:android:aee96694ba460971e94efd",
+        "android_client_info": {
+          "package_name": "com.neverdrop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB52gn8yBWuUKbsyv3jUE5G3N2eX4_Crdg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
