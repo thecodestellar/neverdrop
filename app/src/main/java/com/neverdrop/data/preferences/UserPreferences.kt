@@ -57,10 +57,19 @@ class UserPreferences(context: Context) {
         get() = prefs.getString(KEY_ANTHROPIC_API_KEY, null)
         set(value) = prefs.edit().putString(KEY_ANTHROPIC_API_KEY, value?.takeIf { it.isNotBlank() }).apply()
 
-    /** Master switch for Claude-powered capture, classification, and briefings. */
+    /** Master switch for AI-powered capture, classification, and briefings. */
     var aiEnabled: Boolean
         get() = prefs.getBoolean(KEY_AI_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_AI_ENABLED, value).apply()
+
+    /**
+     * Prefer the on-device Gemma model when it's installed. When true (default), private
+     * on-device inference takes priority over the cloud; the cloud is only used when no
+     * on-device model is available.
+     */
+    var onDeviceAiEnabled: Boolean
+        get() = prefs.getBoolean(KEY_ON_DEVICE_AI_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_ON_DEVICE_AI_ENABLED, value).apply()
 
     /** True when AI features can actually run (enabled + a key is present). */
     val aiAvailable: Boolean
@@ -80,5 +89,6 @@ class UserPreferences(context: Context) {
         private const val KEY_GOOGLE_EMAIL = "google_account_email"
         private const val KEY_ANTHROPIC_API_KEY = "anthropic_api_key"
         private const val KEY_AI_ENABLED = "ai_enabled"
+        private const val KEY_ON_DEVICE_AI_ENABLED = "on_device_ai_enabled"
     }
 }

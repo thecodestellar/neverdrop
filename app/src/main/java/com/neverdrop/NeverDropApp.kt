@@ -33,6 +33,9 @@ class NeverDropApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        // Wire up the on-device LLM engine (Gemma via MediaPipe)
+        com.neverdrop.data.ai.OnDeviceLlm.init(this)
+
         // Create notification channels
         NotificationChannelManager.createChannels(this)
 

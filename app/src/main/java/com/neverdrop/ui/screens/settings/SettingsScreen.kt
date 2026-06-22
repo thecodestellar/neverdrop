@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -55,6 +58,10 @@ fun SettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val modelPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { viewModel.importModel(it) } }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,7 +92,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Powered by Claude. When enabled, chat capture, screenshot extraction, and your morning briefing use AI instead of on-device pattern matching.",
+                        "Chat capture, screenshot extraction, and your morning briefing use AI instead of pattern matching. A private on-device model is preferred when installed; the cloud (Claude) is used otherwise.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -135,12 +142,82 @@ fun SettingsScreen(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            if (uiState.hasApiKey) "AI is active. Without a key, NeverDrop falls back to on-device parsing."
-                            else "No key set — using on-device parsing. Add a key to unlock full AI.",
+                            if (uiState.hasApiKey) "Cloud key saved."
+                            else "No cloud key set. Without a key (and without an on-device model), NeverDrop uses local pattern matching.",
                             style = MaterialTheme.typography.bodySmall,
                             color = if (uiState.hasApiKey) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.tertiary
                         )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // On-device (private) model
+                        Text(
+                            "On-device model (private)",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Run a Gemma model entirely on your phone — nothing leaves the device. Import a MediaPipe-compatible .task model file. Preferred over the cloud when installed.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Prefer on-device when available")
+                            Switch(
+                                checked = uiState.onDeviceAiEnabled,
+                                onCheckedChange = viewModel::toggleOnDeviceAi
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (uiState.isImportingModel) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(modifier = Modifier.height(20.dp))
+                                Text(
+                                    "  Importing model… (large files may take a while)",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        } else if (uiState.modelInstalled) {
+                            val sizeMb = uiState.modelSizeBytes / 1024.0 / 1024.0
+                            Text(
+                                "Model installed (${String.format("%.0f", sizeMb)} MB)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(onClick = { modelPicker.launch(arrayOf("*/*")) }) {
+                                    Text("Replace")
+                                }
+                                OutlinedButton(onClick = viewModel::removeModel) {
+                                    Text("Remove model")
+                                }
+                            }
+                        } else {
+                            Button(onClick = { modelPicker.launch(arrayOf("*/*")) }) {
+                                Text("Import model file")
+                            }
+                        }
+
+                        uiState.modelError?.let { err ->
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Import failed: $err",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }

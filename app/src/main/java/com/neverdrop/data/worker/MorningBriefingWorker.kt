@@ -75,21 +75,16 @@ class MorningBriefingWorker(
             }
         }
 
-        // Let Claude write a warm, coach-style briefing when configured; fall back to the
-        // plain stats summary otherwise.
+        // Let the AI engine (on-device Gemma, else cloud Claude) write a warm, coach-style
+        // briefing when available; fall back to the plain stats summary otherwise.
         val prefs = app.userPreferences
-        val apiKey = prefs.anthropicApiKey
-        val body = if (prefs.aiEnabled && !apiKey.isNullOrBlank()) {
-            val stats = buildString {
-                append(statsLine)
-                topUrgent?.let { (task, _) -> append("\nMost urgent commitment: ${task.title}") }
-                val owed = activeTasks.mapNotNull { it.relatedPerson }.distinct()
-                if (owed.isNotEmpty()) append("\nPeople you owe follow-ups: ${owed.joinToString(", ")}")
-            }
-            com.neverdrop.data.ai.ClaudeClient.generateBriefing(apiKey, stats) ?: heuristicBody
-        } else {
-            heuristicBody
+        val stats = buildString {
+            append(statsLine)
+            topUrgent?.let { (task, _) -> append("\nMost urgent commitment: ${task.title}") }
+            val owed = activeTasks.mapNotNull { it.relatedPerson }.distinct()
+            if (owed.isNotEmpty()) append("\nPeople you owe follow-ups: ${owed.joinToString(", ")}")
         }
+        val body = com.neverdrop.data.ai.AiEngine.generateBriefing(prefs, stats) ?: heuristicBody
 
         val contentIntent = PendingIntent.getActivity(
             applicationContext, 0,

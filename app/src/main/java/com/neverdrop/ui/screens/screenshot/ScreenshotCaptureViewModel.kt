@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.neverdrop.data.ai.ClaudeClient
+import com.neverdrop.data.ai.AiEngine
 import com.neverdrop.data.capture.ExtractedCommitment
 import com.neverdrop.data.capture.ScreenshotAnalyzer
 import com.neverdrop.data.preferences.UserPreferences
@@ -48,15 +48,10 @@ class ScreenshotCaptureViewModel(
             try {
                 val result = analyzer.analyzeImage(context, uri)
 
-                // Prefer Claude's extraction over the on-device regex heuristics when available.
-                val key = preferences.anthropicApiKey
-                val commitments = if (preferences.aiEnabled && !key.isNullOrBlank() && result.fullText.isNotBlank()) {
-                    ClaudeClient.extractFromScreenshot(key, result.fullText)
-                        ?.takeIf { it.isNotEmpty() }
-                        ?: result.commitments
-                } else {
-                    result.commitments
-                }
+                // Prefer the AI engine (on-device Gemma, else cloud Claude) over regex heuristics.
+                val commitments = AiEngine.extractFromScreenshot(preferences, result.fullText)
+                    ?.takeIf { it.isNotEmpty() }
+                    ?: result.commitments
 
                 val allSelected = commitments.indices.toSet()
                 _uiState.value = _uiState.value.copy(

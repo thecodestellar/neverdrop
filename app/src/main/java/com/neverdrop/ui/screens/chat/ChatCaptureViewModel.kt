@@ -2,7 +2,7 @@ package com.neverdrop.ui.screens.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.neverdrop.data.ai.ClaudeClient
+import com.neverdrop.data.ai.AiEngine
 import com.neverdrop.data.capture.ExtractedCommitment
 import com.neverdrop.data.preferences.UserPreferences
 import com.neverdrop.data.repository.TaskRepository
@@ -71,12 +71,9 @@ class ChatCaptureViewModel(
         }
     }
 
-    /** Use the Claude-powered parser when available; otherwise fall back to on-device heuristics. */
+    /** Use the AI engine (on-device Gemma, else cloud Claude) when available; otherwise heuristics. */
     private suspend fun parseWithAiOrFallback(text: String): ParsedInput {
-        val key = preferences.anthropicApiKey
-        if (preferences.aiEnabled && !key.isNullOrBlank()) {
-            ClaudeClient.parseCommitment(key, text)?.let { return it.toParsedInput() }
-        }
+        AiEngine.parseCommitment(preferences, text)?.let { return it.toParsedInput() }
         return parseNaturalLanguage(text)
     }
 

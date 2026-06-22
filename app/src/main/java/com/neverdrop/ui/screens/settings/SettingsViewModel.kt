@@ -1,8 +1,10 @@
 package com.neverdrop.ui.screens.settings
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.neverdrop.data.ai.OnDeviceLlm
 import com.neverdrop.data.preferences.UserPreferences
 import com.neverdrop.data.google.GoogleAuthManager
 import com.neverdrop.data.worker.WorkManagerInitializer
@@ -25,7 +27,12 @@ data class SettingsUiState(
     val isSyncing: Boolean = false,
     val lastSyncTime: Long = 0L,
     val aiEnabled: Boolean = true,
-    val hasApiKey: Boolean = false
+    val hasApiKey: Boolean = false,
+    val onDeviceAiEnabled: Boolean = true,
+    val modelInstalled: Boolean = false,
+    val modelSizeBytes: Long = 0L,
+    val isImportingModel: Boolean = false,
+    val modelError: String? = null
 )
 
 class SettingsViewModel(
@@ -50,8 +57,38 @@ class SettingsViewModel(
         googleEmail = preferences.googleAccountEmail,
         lastSyncTime = preferences.lastSyncTimestamp,
         aiEnabled = preferences.aiEnabled,
-        hasApiKey = !preferences.anthropicApiKey.isNullOrBlank()
+        hasApiKey = !preferences.anthropicApiKey.isNullOrBlank(),
+        onDeviceAiEnabled = preferences.onDeviceAiEnabled,
+        modelInstalled = OnDeviceLlm.isModelPresent(),
+        modelSizeBytes = OnDeviceLlm.modelSizeBytes()
     )
+
+    fun toggleOnDeviceAi(enabled: Boolean) {
+        preferences.onDeviceAiEnabled = enabled
+        _uiState.value = _uiState.value.copy(onDeviceAiEnabled = enabled)
+    }
+
+    fun importModel(uri: Uri) {
+        _uiState.value = _uiState.value.copy(isImportingModel = true, modelError = null)
+        viewModelScope.launch {
+            val result = OnDeviceLlm.importModel(uri)
+            _uiState.value = _uiState.value.copy(
+                isImportingModel = false,
+                modelInstalled = OnDeviceLlm.isModelPresent(),
+                modelSizeBytes = OnDeviceLlm.modelSizeBytes(),
+                modelError = result.exceptionOrNull()?.message
+            )
+        }
+    }
+
+    fun removeModel() {
+        OnDeviceLlm.deleteModel()
+        _uiState.value = _uiState.value.copy(
+            modelInstalled = false,
+            modelSizeBytes = 0L,
+            modelError = null
+        )
+    }
 
     fun toggleAi(enabled: Boolean) {
         preferences.aiEnabled = enabled

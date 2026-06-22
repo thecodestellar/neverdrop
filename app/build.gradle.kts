@@ -105,8 +105,11 @@ dependencies {
     // Coil for image loading in Compose
     implementation(libs.coil.compose)
 
-    // Anthropic (Claude) SDK — the AI Intelligence Engine
+    // Anthropic (Claude) SDK — the cloud AI Intelligence Engine
     implementation(libs.anthropic.java)
+
+    // MediaPipe LLM Inference — on-device LLM (Gemma) for private, offline processing
+    implementation(libs.mediapipe.genai)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

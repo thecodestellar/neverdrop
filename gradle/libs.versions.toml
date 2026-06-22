@@ -24,6 +24,7 @@ googleApiCalendar = "v3-rev20250404-2.0.0"
 mlkitTextRecognition = "16.0.1"
 coil = "2.7.0"
 anthropic = "2.34.0"
+mediapipeGenai = "0.10.24"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -60,6 +61,7 @@ google-auth = { group = "com.google.android.gms", name = "play-services-auth", v
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 anthropic-java = { group = "com.anthropic", name = "anthropic-java", version.ref = "anthropic" }
+mediapipe-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipeGenai" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
