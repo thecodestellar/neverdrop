@@ -20,17 +20,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.neverdrop.data.google.GoogleAuthManager
@@ -70,6 +75,76 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // AI Intelligence Section
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "AI Intelligence Engine",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Powered by Claude. When enabled, chat capture, screenshot extraction, and your morning briefing use AI instead of on-device pattern matching.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Enable AI features")
+                        Switch(
+                            checked = uiState.aiEnabled,
+                            onCheckedChange = viewModel::toggleAi
+                        )
+                    }
+
+                    if (uiState.aiEnabled) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        var apiKeyInput by remember { mutableStateOf("") }
+                        OutlinedTextField(
+                            value = apiKeyInput,
+                            onValueChange = { apiKeyInput = it },
+                            label = { Text("Anthropic API key") },
+                            placeholder = {
+                                Text(if (uiState.hasApiKey) "Key saved — enter to replace" else "sk-ant-...")
+                            },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    viewModel.updateApiKey(apiKeyInput.trim())
+                                    apiKeyInput = ""
+                                },
+                                enabled = apiKeyInput.isNotBlank()
+                            ) { Text("Save key") }
+                            if (uiState.hasApiKey) {
+                                OutlinedButton(onClick = {
+                                    viewModel.clearApiKey()
+                                    apiKeyInput = ""
+                                }) { Text("Remove key") }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            if (uiState.hasApiKey) "AI is active. Without a key, NeverDrop falls back to on-device parsing."
+                            else "No key set — using on-device parsing. Add a key to unlock full AI.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (uiState.hasApiKey) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                }
+            }
+
             // Morning Briefing Section
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {

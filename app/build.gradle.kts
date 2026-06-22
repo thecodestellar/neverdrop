@@ -52,6 +52,11 @@ android {
             excludes += "META-INF/NOTICE"
             excludes += "META-INF/NOTICE.txt"
             excludes += "META-INF/INDEX.LIST"
+            // Anthropic SDK transitive deps (jackson, okhttp) ship duplicate metadata
+            excludes += "META-INF/maven/**"
+            excludes += "META-INF/versions/**/module-info.class"
+            excludes += "META-INF/*.kotlin_module"
+            pickFirsts += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
     }
 }
@@ -99,6 +104,9 @@ dependencies {
 
     // Coil for image loading in Compose
     implementation(libs.coil.compose)
+
+    // Anthropic (Claude) SDK — the AI Intelligence Engine
+    implementation(libs.anthropic.java)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

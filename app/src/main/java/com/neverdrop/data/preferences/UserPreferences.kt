@@ -52,6 +52,20 @@ class UserPreferences(context: Context) {
         get() = prefs.getInt(KEY_EVENING_REVIEW_MINUTE, 0)
         set(value) = prefs.edit().putInt(KEY_EVENING_REVIEW_MINUTE, value).apply()
 
+    /** Anthropic API key powering the AI Intelligence Engine. Null when unconfigured. */
+    var anthropicApiKey: String?
+        get() = prefs.getString(KEY_ANTHROPIC_API_KEY, null)
+        set(value) = prefs.edit().putString(KEY_ANTHROPIC_API_KEY, value?.takeIf { it.isNotBlank() }).apply()
+
+    /** Master switch for Claude-powered capture, classification, and briefings. */
+    var aiEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AI_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_AI_ENABLED, value).apply()
+
+    /** True when AI features can actually run (enabled + a key is present). */
+    val aiAvailable: Boolean
+        get() = aiEnabled && !anthropicApiKey.isNullOrBlank()
+
     companion object {
         private const val KEY_BRIEFING_ENABLED = "briefing_enabled"
         private const val KEY_BRIEFING_HOUR = "briefing_hour"
@@ -64,5 +78,7 @@ class UserPreferences(context: Context) {
         private const val KEY_AUTO_SYNC_ENABLED = "auto_sync_enabled"
         private const val KEY_LAST_SYNC = "last_sync_timestamp"
         private const val KEY_GOOGLE_EMAIL = "google_account_email"
+        private const val KEY_ANTHROPIC_API_KEY = "anthropic_api_key"
+        private const val KEY_AI_ENABLED = "ai_enabled"
     }
 }

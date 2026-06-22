@@ -67,11 +67,28 @@ class MorningBriefingWorker(
         summaryParts.add("Follow-through: ${score.percentage.toInt()}%")
         if (score.streakDays > 0) summaryParts.add("${score.streakDays}-day streak!")
 
-        val body = buildString {
-            append(summaryParts.joinToString(" | "))
+        val statsLine = summaryParts.joinToString(" | ")
+        val heuristicBody = buildString {
+            append(statsLine)
             topUrgent?.let { (task, urgency) ->
                 append("\n\nTop priority: ${task.title} (urgency: ${urgency.toInt()})")
             }
+        }
+
+        // Let Claude write a warm, coach-style briefing when configured; fall back to the
+        // plain stats summary otherwise.
+        val prefs = app.userPreferences
+        val apiKey = prefs.anthropicApiKey
+        val body = if (prefs.aiEnabled && !apiKey.isNullOrBlank()) {
+            val stats = buildString {
+                append(statsLine)
+                topUrgent?.let { (task, _) -> append("\nMost urgent commitment: ${task.title}") }
+                val owed = activeTasks.mapNotNull { it.relatedPerson }.distinct()
+                if (owed.isNotEmpty()) append("\nPeople you owe follow-ups: ${owed.joinToString(", ")}")
+            }
+            com.neverdrop.data.ai.ClaudeClient.generateBriefing(apiKey, stats) ?: heuristicBody
+        } else {
+            heuristicBody
         }
 
         val contentIntent = PendingIntent.getActivity(

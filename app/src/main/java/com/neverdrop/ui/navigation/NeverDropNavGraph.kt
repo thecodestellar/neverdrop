@@ -49,7 +49,7 @@ fun NeverDropNavGraph(
             )
         }
         composable(NavRoutes.SCREENSHOT_CAPTURE) {
-            val viewModel = remember { ScreenshotCaptureViewModel(repository) }
+            val viewModel = remember { ScreenshotCaptureViewModel(repository, userPreferences) }
             ScreenshotCaptureScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
@@ -63,7 +63,7 @@ fun NeverDropNavGraph(
             )
         }
         composable(NavRoutes.CHAT_CAPTURE) {
-            val viewModel = remember { ChatCaptureViewModel(repository) }
+            val viewModel = remember { ChatCaptureViewModel(repository, userPreferences) }
             ChatCaptureScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }

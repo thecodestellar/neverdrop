@@ -23,7 +23,9 @@ data class SettingsUiState(
     val autoSyncEnabled: Boolean = false,
     val googleEmail: String? = null,
     val isSyncing: Boolean = false,
-    val lastSyncTime: Long = 0L
+    val lastSyncTime: Long = 0L,
+    val aiEnabled: Boolean = true,
+    val hasApiKey: Boolean = false
 )
 
 class SettingsViewModel(
@@ -46,8 +48,25 @@ class SettingsViewModel(
         notificationMiningEnabled = preferences.notificationMiningEnabled,
         autoSyncEnabled = preferences.autoSyncEnabled,
         googleEmail = preferences.googleAccountEmail,
-        lastSyncTime = preferences.lastSyncTimestamp
+        lastSyncTime = preferences.lastSyncTimestamp,
+        aiEnabled = preferences.aiEnabled,
+        hasApiKey = !preferences.anthropicApiKey.isNullOrBlank()
     )
+
+    fun toggleAi(enabled: Boolean) {
+        preferences.aiEnabled = enabled
+        _uiState.value = _uiState.value.copy(aiEnabled = enabled)
+    }
+
+    fun updateApiKey(key: String) {
+        preferences.anthropicApiKey = key
+        _uiState.value = _uiState.value.copy(hasApiKey = !key.isBlank())
+    }
+
+    fun clearApiKey() {
+        preferences.anthropicApiKey = null
+        _uiState.value = _uiState.value.copy(hasApiKey = false)
+    }
 
     fun toggleBriefing(enabled: Boolean) {
         preferences.briefingEnabled = enabled

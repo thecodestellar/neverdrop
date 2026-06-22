@@ -2,6 +2,9 @@ package com.neverdrop.ui.screens.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.neverdrop.data.ai.ClaudeClient
+import com.neverdrop.data.capture.ExtractedCommitment
+import com.neverdrop.data.preferences.UserPreferences
 import com.neverdrop.data.repository.TaskRepository
 import com.neverdrop.domain.model.CommitmentType
 import com.neverdrop.domain.model.Task
@@ -14,6 +17,9 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 data class ChatMessage(
     val text: String,
@@ -31,7 +37,10 @@ data class ChatUiState(
     val inputText: String = ""
 )
 
-class ChatCaptureViewModel(private val repository: TaskRepository) : ViewModel() {
+class ChatCaptureViewModel(
+    private val repository: TaskRepository,
+    private val preferences: UserPreferences
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -51,7 +60,7 @@ class ChatCaptureViewModel(private val repository: TaskRepository) : ViewModel()
         )
 
         viewModelScope.launch {
-            val parsed = parseNaturalLanguage(text)
+            val parsed = parseWithAiOrFallback(text)
             repository.addTask(parsed.task)
 
             val response = buildResponse(parsed)
@@ -61,6 +70,37 @@ class ChatCaptureViewModel(private val repository: TaskRepository) : ViewModel()
             )
         }
     }
+
+    /** Use the Claude-powered parser when available; otherwise fall back to on-device heuristics. */
+    private suspend fun parseWithAiOrFallback(text: String): ParsedInput {
+        val key = preferences.anthropicApiKey
+        if (preferences.aiEnabled && !key.isNullOrBlank()) {
+            ClaudeClient.parseCommitment(key, text)?.let { return it.toParsedInput() }
+        }
+        return parseNaturalLanguage(text)
+    }
+
+    private fun ExtractedCommitment.toParsedInput(): ParsedInput {
+        val task = Task(
+            title = title,
+            commitmentType = commitmentType,
+            priority = priority,
+            relatedPerson = sender,
+            deadline = deadline,
+            createdAt = Instant.now()
+        )
+        val priorityLabel = if (priority == TaskPriority.MEDIUM) null else priority.name.lowercase()
+        return ParsedInput(
+            task = task,
+            detectedPerson = sender,
+            detectedDeadline = deadline?.let { formatDeadline(it) },
+            detectedPriority = priorityLabel
+        )
+    }
+
+    private fun formatDeadline(deadline: Instant): String =
+        ZonedDateTime.ofInstant(deadline, ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("EEE, MMM d 'at' h:mm a", Locale.getDefault()))
 
     private data class ParsedInput(
         val task: Task,

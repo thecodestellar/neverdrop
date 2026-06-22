@@ -4,8 +4,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.neverdrop.data.ai.ClaudeClient
 import com.neverdrop.data.capture.ExtractedCommitment
 import com.neverdrop.data.capture.ScreenshotAnalyzer
+import com.neverdrop.data.preferences.UserPreferences
 import com.neverdrop.data.repository.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +25,8 @@ data class ScreenshotUiState(
 )
 
 class ScreenshotCaptureViewModel(
-    private val repository: TaskRepository
+    private val repository: TaskRepository,
+    private val preferences: UserPreferences
 ) : ViewModel() {
 
     private val analyzer = ScreenshotAnalyzer()
@@ -44,11 +47,22 @@ class ScreenshotCaptureViewModel(
         viewModelScope.launch {
             try {
                 val result = analyzer.analyzeImage(context, uri)
-                val allSelected = result.commitments.indices.toSet()
+
+                // Prefer Claude's extraction over the on-device regex heuristics when available.
+                val key = preferences.anthropicApiKey
+                val commitments = if (preferences.aiEnabled && !key.isNullOrBlank() && result.fullText.isNotBlank()) {
+                    ClaudeClient.extractFromScreenshot(key, result.fullText)
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: result.commitments
+                } else {
+                    result.commitments
+                }
+
+                val allSelected = commitments.indices.toSet()
                 _uiState.value = _uiState.value.copy(
                     isAnalyzing = false,
                     extractedText = result.fullText,
-                    commitments = result.commitments,
+                    commitments = commitments,
                     selectedIndices = allSelected
                 )
             } catch (e: Exception) {
