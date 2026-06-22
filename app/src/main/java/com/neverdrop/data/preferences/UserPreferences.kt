@@ -75,6 +75,30 @@ class UserPreferences(context: Context) {
     val aiAvailable: Boolean
         get() = aiEnabled && !anthropicApiKey.isNullOrBlank()
 
+    // --- Cloud sync (Supabase: hosted or self-hosted) ---
+
+    /** Base URL of the Supabase project, e.g. https://xyz.supabase.co or https://db.example.com */
+    var supabaseUrl: String?
+        get() = prefs.getString(KEY_SUPABASE_URL, null)
+        set(value) = prefs.edit().putString(KEY_SUPABASE_URL, value?.takeIf { it.isNotBlank() }?.trimEnd('/')).apply()
+
+    /** Supabase anon (public) API key. */
+    var supabaseAnonKey: String?
+        get() = prefs.getString(KEY_SUPABASE_ANON_KEY, null)
+        set(value) = prefs.edit().putString(KEY_SUPABASE_ANON_KEY, value?.takeIf { it.isNotBlank() }).apply()
+
+    var cloudSyncEnabled: Boolean
+        get() = prefs.getBoolean(KEY_CLOUD_SYNC_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_CLOUD_SYNC_ENABLED, value).apply()
+
+    /** Watermark for incremental pulls — only rows updated after this are fetched. */
+    var lastCloudPullEpochMillis: Long
+        get() = prefs.getLong(KEY_LAST_CLOUD_PULL, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_CLOUD_PULL, value).apply()
+
+    val cloudSyncConfigured: Boolean
+        get() = !supabaseUrl.isNullOrBlank() && !supabaseAnonKey.isNullOrBlank()
+
     companion object {
         private const val KEY_BRIEFING_ENABLED = "briefing_enabled"
         private const val KEY_BRIEFING_HOUR = "briefing_hour"
@@ -90,5 +114,9 @@ class UserPreferences(context: Context) {
         private const val KEY_ANTHROPIC_API_KEY = "anthropic_api_key"
         private const val KEY_AI_ENABLED = "ai_enabled"
         private const val KEY_ON_DEVICE_AI_ENABLED = "on_device_ai_enabled"
+        private const val KEY_SUPABASE_URL = "supabase_url"
+        private const val KEY_SUPABASE_ANON_KEY = "supabase_anon_key"
+        private const val KEY_CLOUD_SYNC_ENABLED = "cloud_sync_enabled"
+        private const val KEY_LAST_CLOUD_PULL = "last_cloud_pull"
     }
 }

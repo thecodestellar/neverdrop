@@ -120,4 +120,20 @@ object WorkManagerInitializer {
     fun cancelSyncWorker(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(SyncWorker.WORK_NAME)
     }
+
+    fun scheduleCloudSync(context: Context) {
+        val request = PeriodicWorkRequestBuilder<CloudSyncWorker>(
+            1, TimeUnit.HOURS
+        ).build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            CloudSyncWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
+    }
+
+    fun cancelCloudSync(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(CloudSyncWorker.WORK_NAME)
+    }
 }

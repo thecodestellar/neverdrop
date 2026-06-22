@@ -1,6 +1,7 @@
 package com.neverdrop.domain.model
 
 import java.time.Instant
+import java.util.UUID
 
 data class Task(
     val id: Long = 0,
@@ -14,7 +15,11 @@ data class Task(
     val createdAt: Instant = Instant.now(),
     val completedAt: Instant? = null,
     val snoozeCount: Int = 0,
-    val lastSnoozedAt: Instant? = null
+    val lastSnoozedAt: Instant? = null,
+    /** Stable, device-independent identity used for cloud sync. */
+    val uuid: String = UUID.randomUUID().toString(),
+    /** Last local modification time; drives last-write-wins conflict resolution. */
+    val updatedAt: Instant = Instant.now()
 ) {
     val isOverdue: Boolean
         get() = deadline != null && Instant.now().isAfter(deadline) && status == TaskStatus.ACTIVE

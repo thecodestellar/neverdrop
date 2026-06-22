@@ -1,14 +1,19 @@
 package com.neverdrop.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.neverdrop.domain.model.CommitmentType
 import com.neverdrop.domain.model.Task
 import com.neverdrop.domain.model.TaskPriority
 import com.neverdrop.domain.model.TaskStatus
 import java.time.Instant
+import java.util.UUID
 
-@Entity(tableName = "tasks")
+@Entity(
+    tableName = "tasks",
+    indices = [Index(value = ["uuid"], unique = true)]
+)
 data class TaskEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
@@ -21,7 +26,16 @@ data class TaskEntity(
     val createdAtEpochMillis: Long = Instant.now().toEpochMilli(),
     val completedAtEpochMillis: Long? = null,
     val snoozeCount: Int = 0,
-    val lastSnoozedAtEpochMillis: Long? = null
+    val lastSnoozedAtEpochMillis: Long? = null,
+    // --- cloud-sync metadata ---
+    /** Stable, device-independent identity (the Supabase row id). */
+    val uuid: String = UUID.randomUUID().toString(),
+    /** Last modification time; drives last-write-wins. */
+    val updatedAtEpochMillis: Long = Instant.now().toEpochMilli(),
+    /** True when there are local changes not yet pushed to the cloud. */
+    val dirty: Boolean = true,
+    /** Soft-delete tombstone so deletions propagate across devices. */
+    val deleted: Boolean = false
 ) {
     fun toDomain(): Task = Task(
         id = id,
@@ -35,10 +49,13 @@ data class TaskEntity(
         createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
         completedAt = completedAtEpochMillis?.let { Instant.ofEpochMilli(it) },
         snoozeCount = snoozeCount,
-        lastSnoozedAt = lastSnoozedAtEpochMillis?.let { Instant.ofEpochMilli(it) }
+        lastSnoozedAt = lastSnoozedAtEpochMillis?.let { Instant.ofEpochMilli(it) },
+        uuid = uuid,
+        updatedAt = Instant.ofEpochMilli(updatedAtEpochMillis)
     )
 
     companion object {
+        /** Build an entity from a local edit: always marked dirty so it gets pushed. */
         fun fromDomain(task: Task): TaskEntity = TaskEntity(
             id = task.id,
             title = task.title,
@@ -51,7 +68,11 @@ data class TaskEntity(
             createdAtEpochMillis = task.createdAt.toEpochMilli(),
             completedAtEpochMillis = task.completedAt?.toEpochMilli(),
             snoozeCount = task.snoozeCount,
-            lastSnoozedAtEpochMillis = task.lastSnoozedAt?.toEpochMilli()
+            lastSnoozedAtEpochMillis = task.lastSnoozedAt?.toEpochMilli(),
+            uuid = task.uuid,
+            updatedAtEpochMillis = task.updatedAt.toEpochMilli(),
+            dirty = true,
+            deleted = false
         )
     }
 }

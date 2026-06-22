@@ -222,6 +222,96 @@ fun SettingsScreen(
                 }
             }
 
+            // Cloud Sync Section
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Cloud Sync (Supabase)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Sync your tasks across devices via Supabase — hosted or self-hosted on your own server. Sign in with Google (above) first; the same account authenticates sync.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    var urlInput by remember { mutableStateOf(uiState.supabaseUrl) }
+                    OutlinedTextField(
+                        value = urlInput,
+                        onValueChange = { urlInput = it },
+                        label = { Text("Project URL") },
+                        placeholder = { Text("https://xyz.supabase.co") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    var anonKeyInput by remember { mutableStateOf("") }
+                    OutlinedTextField(
+                        value = anonKeyInput,
+                        onValueChange = { anonKeyInput = it },
+                        label = { Text("Anon (public) key") },
+                        placeholder = {
+                            Text(if (uiState.hasAnonKey) "Key saved — enter to replace" else "eyJ...")
+                        },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            viewModel.updateSupabaseUrl(urlInput.trim())
+                            if (anonKeyInput.isNotBlank()) {
+                                viewModel.updateSupabaseAnonKey(anonKeyInput.trim())
+                                anonKeyInput = ""
+                            }
+                        },
+                        enabled = urlInput.isNotBlank()
+                    ) { Text("Save connection") }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Enable cloud sync")
+                        Switch(
+                            checked = uiState.cloudSyncEnabled,
+                            onCheckedChange = viewModel::toggleCloudSync
+                        )
+                    }
+
+                    if (uiState.cloudSyncEnabled) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = viewModel::runCloudSyncNow,
+                            enabled = !uiState.isCloudSyncing
+                        ) {
+                            if (uiState.isCloudSyncing) {
+                                CircularProgressIndicator(modifier = Modifier.height(18.dp))
+                                Text("  Syncing…")
+                            } else {
+                                Text("Sync now")
+                            }
+                        }
+                    }
+
+                    uiState.cloudSyncMessage?.let { msg ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            msg,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (msg.startsWith("Sync failed")) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
             // Morning Briefing Section
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {

@@ -9,6 +9,7 @@ import com.neverdrop.data.notification.NotificationChannelManager
 import com.neverdrop.data.notification.NotificationResponseTracker
 import com.neverdrop.data.preferences.UserPreferences
 import com.neverdrop.data.repository.TaskRepository
+import com.neverdrop.data.sync.SupabaseSyncRepository
 import com.neverdrop.data.sync.SyncRepository
 import com.neverdrop.data.worker.WorkManagerInitializer
 
@@ -27,6 +28,14 @@ class NeverDropApp : Application() {
             calendarSyncService = CalendarSyncService(),
             googleAuthManager = googleAuthManager,
             preferences = userPreferences
+        )
+    }
+
+    val supabaseSyncRepository: SupabaseSyncRepository by lazy {
+        SupabaseSyncRepository(
+            repository = taskRepository,
+            preferences = userPreferences,
+            googleIdTokenProvider = { googleAuthManager.currentUser.value?.idToken }
         )
     }
 
@@ -68,6 +77,11 @@ class NeverDropApp : Application() {
         // Schedule sync worker if enabled
         if (userPreferences.autoSyncEnabled && googleAuthManager.isSignedIn) {
             WorkManagerInitializer.scheduleSyncWorker(this)
+        }
+
+        // Schedule cloud (Supabase) sync if configured
+        if (userPreferences.cloudSyncEnabled && userPreferences.cloudSyncConfigured) {
+            WorkManagerInitializer.scheduleCloudSync(this)
         }
     }
 }

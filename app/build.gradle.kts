@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -110,6 +111,13 @@ dependencies {
 
     // MediaPipe LLM Inference — on-device LLM (Gemma) for private, offline processing
     implementation(libs.mediapipe.genai)
+
+    // Supabase — cloud sync backend (Postgres + Auth). Works with hosted or self-hosted.
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.auth)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

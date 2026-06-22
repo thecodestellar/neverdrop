@@ -19,3 +19,22 @@
 -dontwarn java.net.http.**
 -dontwarn java.lang.management.**
 -dontwarn org.slf4j.**
+
+# kotlinx.serialization (Supabase DTOs) — keep generated serializers
+-keepattributes RuntimeVisibleAnnotations,AnnotationDefault
+-keepclassmembers class com.neverdrop.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.neverdrop.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class com.neverdrop.**$$serializer { *; }
+-keep class kotlinx.serialization.** { *; }
+-dontwarn kotlinx.serialization.**
+
+# Supabase + Ktor
+-keep class io.github.jan.supabase.** { *; }
+-dontwarn io.github.jan.supabase.**
+-keep class io.ktor.** { *; }
+-dontwarn io.ktor.**
+-dontwarn org.conscrypt.**

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.neverdrop.NeverDropApp
 import com.neverdrop.data.ai.OnDeviceLlm
 import com.neverdrop.data.preferences.UserPreferences
 import com.neverdrop.data.google.GoogleAuthManager
@@ -32,7 +33,12 @@ data class SettingsUiState(
     val modelInstalled: Boolean = false,
     val modelSizeBytes: Long = 0L,
     val isImportingModel: Boolean = false,
-    val modelError: String? = null
+    val modelError: String? = null,
+    val cloudSyncEnabled: Boolean = false,
+    val supabaseUrl: String = "",
+    val hasAnonKey: Boolean = false,
+    val isCloudSyncing: Boolean = false,
+    val cloudSyncMessage: String? = null
 )
 
 class SettingsViewModel(
@@ -60,8 +66,43 @@ class SettingsViewModel(
         hasApiKey = !preferences.anthropicApiKey.isNullOrBlank(),
         onDeviceAiEnabled = preferences.onDeviceAiEnabled,
         modelInstalled = OnDeviceLlm.isModelPresent(),
-        modelSizeBytes = OnDeviceLlm.modelSizeBytes()
+        modelSizeBytes = OnDeviceLlm.modelSizeBytes(),
+        cloudSyncEnabled = preferences.cloudSyncEnabled,
+        supabaseUrl = preferences.supabaseUrl ?: "",
+        hasAnonKey = !preferences.supabaseAnonKey.isNullOrBlank()
     )
+
+    fun updateSupabaseUrl(url: String) {
+        preferences.supabaseUrl = url
+        _uiState.value = _uiState.value.copy(supabaseUrl = preferences.supabaseUrl ?: "")
+    }
+
+    fun updateSupabaseAnonKey(key: String) {
+        preferences.supabaseAnonKey = key
+        _uiState.value = _uiState.value.copy(hasAnonKey = !key.isBlank())
+    }
+
+    fun toggleCloudSync(enabled: Boolean) {
+        preferences.cloudSyncEnabled = enabled
+        _uiState.value = _uiState.value.copy(cloudSyncEnabled = enabled)
+        if (enabled && preferences.cloudSyncConfigured) {
+            WorkManagerInitializer.scheduleCloudSync(context)
+        } else {
+            WorkManagerInitializer.cancelCloudSync(context)
+        }
+    }
+
+    fun runCloudSyncNow() {
+        _uiState.value = _uiState.value.copy(isCloudSyncing = true, cloudSyncMessage = null)
+        viewModelScope.launch {
+            val repo = (context.applicationContext as NeverDropApp).supabaseSyncRepository
+            val message = repo.syncAll().fold(
+                onSuccess = { "Synced — pushed ${it.pushed}, pulled ${it.pulled}" },
+                onFailure = { "Sync failed: ${it.message ?: "unknown error"}" }
+            )
+            _uiState.value = _uiState.value.copy(isCloudSyncing = false, cloudSyncMessage = message)
+        }
+    }
 
     fun toggleOnDeviceAi(enabled: Boolean) {
         preferences.onDeviceAiEnabled = enabled
